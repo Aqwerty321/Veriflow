@@ -4,6 +4,9 @@ A proof-of-concept AI-powered product authentication system with blockchain simu
 """
 
 import os
+import hashlib
+import time
+from datetime import datetime
 from flask import Flask, request, jsonify, render_template
 from PIL import Image
 import numpy as np
@@ -13,8 +16,14 @@ from io import BytesIO
 # Initialize Flask application
 app = Flask(__name__)
 
+# Configure maximum file upload size (10MB)
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
+
 # Global variable to store the AI model
 model = None
+
+# In-memory storage for recent certifications (for demo purposes)
+certification_history = []
 
 def load_ai_model():
     """
@@ -105,10 +114,16 @@ def analyze_product():
         # Format confidence as a percentage string
         confidence_percentage = f"{confidence * 100:.1f}%"
         
+        # Generate a unique product ID based on image hash
+        image_hash = hashlib.sha256(image_bytes).hexdigest()[:16]
+        product_id = f"VRC-{image_hash.upper()}"
+        
         # Return the result as JSON
         return jsonify({
             'productName': formatted_label,
-            'confidence': confidence_percentage
+            'confidence': confidence_percentage,
+            'productId': product_id,
+            'timestamp': datetime.now().isoformat()
         })
     
     except Exception as e:
@@ -117,6 +132,69 @@ def analyze_product():
         return jsonify({
             'error': 'Failed to analyze image. Please try again with a different image.'
         }), 500
+
+@app.route('/certify', methods=['POST'])
+def certify_product():
+    """
+    API endpoint to simulate blockchain certification.
+    
+    Expected: POST request with product details
+    Returns: JSON with blockchain transaction details
+    """
+    try:
+        data = request.json
+        
+        # Generate a realistic transaction hash
+        tx_data = f"{data.get('productId')}{data.get('productName')}{time.time()}"
+        tx_hash = hashlib.sha256(tx_data.encode()).hexdigest()
+        
+        # Create certification record
+        certification = {
+            'productId': data.get('productId'),
+            'productName': data.get('productName'),
+            'confidence': data.get('confidence'),
+            'txHash': f"0x{tx_hash}",
+            'blockNumber': len(certification_history) + 1000000,  # Simulated block number
+            'timestamp': datetime.now().isoformat(),
+            'status': 'confirmed'
+        }
+        
+        # Store in history (keep last 50)
+        certification_history.append(certification)
+        if len(certification_history) > 50:
+            certification_history.pop(0)
+        
+        return jsonify(certification)
+    
+    except Exception as e:
+        print(f"Error during certification: {str(e)}")
+        return jsonify({
+            'error': 'Failed to certify product. Please try again.'
+        }), 500
+
+@app.route('/history', methods=['GET'])
+def get_history():
+    """
+    API endpoint to retrieve recent certification history.
+    
+    Returns: JSON array of recent certifications
+    """
+    # Return the last 10 certifications in reverse order (newest first)
+    return jsonify(certification_history[-10:][::-1])
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """
+    API endpoint for health checking.
+    
+    Returns: JSON with server status
+    """
+    return jsonify({
+        'status': 'healthy',
+        'modelLoaded': model is not None,
+        'timestamp': datetime.now().isoformat(),
+        'totalCertifications': len(certification_history)
+    })
 
 # Load the AI model when the application starts
 load_ai_model()

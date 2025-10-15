@@ -8,6 +8,9 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
+    
     <style>
         /* Custom animations and styles */
         @keyframes spin {
@@ -45,19 +48,75 @@
         .hidden {
             display: none !important;
         }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(400px); opacity: 0; }
+        }
+        
+        .slide-out {
+            animation: slideOut 0.3s ease-out forwards;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
     
+    <!-- Toast Notification Container -->
+    <div id="toastContainer"></div>
+    
     <!-- Header -->
     <header class="bg-gray-800 shadow-lg">
         <div class="container mx-auto px-6 py-6">
-            <h1 class="text-4xl font-bold text-center">
-                <span class="text-blue-500">Veri</span><span class="text-white">Chain</span>
-            </h1>
-            <p class="text-center text-gray-400 mt-2">AI-Powered Product Authentication System</p>
+            <div class="flex justify-between items-center">
+                <div class="flex-1"></div>
+                <div class="flex-1 text-center">
+                    <h1 class="text-4xl font-bold">
+                        <span class="text-blue-500">Veri</span><span class="text-white">Chain</span>
+                    </h1>
+                    <p class="text-gray-400 mt-2">AI-Powered Product Authentication System</p>
+                </div>
+                <div class="flex-1 flex justify-end">
+                    <button onclick="toggleHistory()" 
+                            class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition duration-300 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        History
+                    </button>
+                </div>
+            </div>
         </div>
     </header>
+    
+    <!-- History Sidebar -->
+    <div id="historySidebar" class="fixed top-0 right-0 h-full w-96 bg-gray-800 shadow-2xl transform translate-x-full transition-transform duration-300 z-50 overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Certification History</h2>
+                <button onclick="toggleHistory()" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="historyContent" class="space-y-4">
+                <p class="text-gray-400 text-center py-8">No certifications yet</p>
+            </div>
+        </div>
+    </div>
     
     <!-- Main Content -->
     <main class="container mx-auto px-6 py-12">
@@ -118,7 +177,7 @@
                 
                 <!-- Product Details -->
                 <div class="bg-gray-700 rounded-lg p-6 mb-6">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
                             <p class="text-gray-400 text-sm mb-1">Product Name</p>
                             <p id="productName" class="text-xl font-semibold">-</p>
@@ -127,6 +186,10 @@
                             <p class="text-gray-400 text-sm mb-1">Confidence Score</p>
                             <p id="confidenceScore" class="text-xl font-semibold text-blue-400">-</p>
                         </div>
+                    </div>
+                    <div class="border-t border-gray-600 pt-4">
+                        <p class="text-gray-400 text-sm mb-1">Product ID</p>
+                        <p id="productId" class="font-mono text-sm text-green-400">-</p>
                     </div>
                 </div>
                 
@@ -155,9 +218,35 @@
                 <div id="blockchain-confirmation" class="hidden mt-6 bg-green-900 border-2 border-green-500 rounded-lg p-6 fade-in">
                     <h3 class="text-xl font-semibold mb-3 text-green-400">🎉 Certificate Issued!</h3>
                     <p class="text-gray-300 mb-4">Your product has been successfully verified and recorded on the blockchain.</p>
-                    <div class="bg-gray-800 rounded p-4 font-mono text-sm">
-                        <p class="text-gray-400 text-xs mb-1">Transaction Hash:</p>
-                        <p class="text-green-400 break-all" id="txHash">0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb7</p>
+                    <div class="bg-gray-800 rounded p-4 font-mono text-sm space-y-3">
+                        <div>
+                            <p class="text-gray-400 text-xs mb-1">Transaction Hash:</p>
+                            <p class="text-green-400 break-all" id="txHash">0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb7</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-xs mb-1">Block Number:</p>
+                            <p class="text-blue-400" id="blockNumber">-</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-xs mb-1">Status:</p>
+                            <p class="text-green-400">✓ Confirmed</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <button onclick="downloadCertificate()" 
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Download Certificate
+                        </button>
+                        <button onclick="shareCertificate()" 
+                                class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition duration-300 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                            </svg>
+                            Share
+                        </button>
                     </div>
                 </div>
             </div>
@@ -171,8 +260,9 @@
     </footer>
     
     <script>
-        // Global variable to store the uploaded file
+        // Global variables
         let uploadedFile = null;
+        let currentProductData = null;
         
         /**
          * Handle image upload and display preview
@@ -245,8 +335,14 @@
                     throw new Error(data.error);
                 }
                 
+                // Store product data
+                currentProductData = data;
+                
                 // Display results
                 displayResults(data);
+                
+                // Show success toast
+                showToast('Product identified successfully!', 'success');
                 
             } catch (error) {
                 console.error('Error during analysis:', error);
@@ -266,6 +362,7 @@
             // Populate result data
             document.getElementById('productName').textContent = data.productName;
             document.getElementById('confidenceScore').textContent = data.confidence;
+            document.getElementById('productId').textContent = data.productId;
             
             // Display the analyzed image
             const resultImage = document.getElementById('resultImage');
@@ -273,24 +370,185 @@
         }
         
         /**
+         * Show toast notification
+         */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const colors = {
+                success: 'bg-green-600',
+                error: 'bg-red-600',
+                info: 'bg-blue-600',
+                warning: 'bg-yellow-600'
+            };
+            
+            toast.className = `toast ${colors[type]} text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 max-w-md`;
+            toast.innerHTML = `
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('slide-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        /**
          * Simulate blockchain certification process
          */
-        function simulateBlockchainCertification() {
-            // Generate a random transaction hash
-            const txHash = '0x' + Array.from({length: 40}, () => 
-                Math.floor(Math.random() * 16).toString(16)
-            ).join('');
+        async function simulateBlockchainCertification() {
+            if (!currentProductData) return;
             
-            document.getElementById('txHash').textContent = txHash;
+            try {
+                // Show loading state
+                const certifyBtn = document.getElementById('certifyBtn');
+                certifyBtn.disabled = true;
+                certifyBtn.innerHTML = 'Processing...';
+                
+                // Send certification request to backend
+                const response = await fetch('/certify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(currentProductData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Display blockchain details
+                document.getElementById('txHash').textContent = data.txHash;
+                document.getElementById('blockNumber').textContent = data.blockNumber;
+                
+                // Store for download/share
+                currentProductData.certification = data;
+                
+                // Hide certify button, show confirmation
+                document.getElementById('certify-section').classList.add('hidden');
+                document.getElementById('blockchain-confirmation').classList.remove('hidden');
+                
+                // Show success toast
+                showToast('Certificate minted on blockchain!', 'success');
+                
+                // Reload history
+                loadHistory();
+                
+            } catch (error) {
+                console.error('Error during certification:', error);
+                showToast('Failed to certify product', 'error');
+                
+                // Reset button
+                const certifyBtn = document.getElementById('certifyBtn');
+                certifyBtn.disabled = false;
+                certifyBtn.innerHTML = '🔐 Certify on Blockchain';
+            }
+        }
+        
+        /**
+         * Toggle history sidebar
+         */
+        function toggleHistory() {
+            const sidebar = document.getElementById('historySidebar');
+            const isOpen = !sidebar.classList.contains('translate-x-full');
             
-            // Hide certify button, show confirmation
-            document.getElementById('certify-section').classList.add('hidden');
-            document.getElementById('blockchain-confirmation').classList.remove('hidden');
+            if (isOpen) {
+                sidebar.classList.add('translate-x-full');
+            } else {
+                sidebar.classList.remove('translate-x-full');
+                loadHistory();
+            }
+        }
+        
+        /**
+         * Load certification history
+         */
+        async function loadHistory() {
+            try {
+                const response = await fetch('/history');
+                const history = await response.json();
+                
+                const container = document.getElementById('historyContent');
+                
+                if (history.length === 0) {
+                    container.innerHTML = '<p class="text-gray-400 text-center py-8">No certifications yet</p>';
+                    return;
+                }
+                
+                container.innerHTML = history.map(cert => `
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="font-semibold mb-2">${cert.productName}</h3>
+                        <p class="text-sm text-gray-400 mb-2">ID: ${cert.productId}</p>
+                        <p class="text-sm text-green-400 mb-2">Confidence: ${cert.confidence}</p>
+                        <p class="text-xs text-gray-500 font-mono break-all">TX: ${cert.txHash.substring(0, 20)}...</p>
+                        <p class="text-xs text-gray-500 mt-1">${new Date(cert.timestamp).toLocaleString()}</p>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+        
+        /**
+         * Download certificate as JSON
+         */
+        function downloadCertificate() {
+            if (!currentProductData || !currentProductData.certification) return;
             
-            // Optional: Show an alert for extra emphasis
-            setTimeout(() => {
-                alert('🎉 Success! Your product certificate has been minted on the blockchain.');
-            }, 300);
+            const certificate = {
+                productName: currentProductData.productName,
+                productId: currentProductData.productId,
+                confidence: currentProductData.confidence,
+                transactionHash: currentProductData.certification.txHash,
+                blockNumber: currentProductData.certification.blockNumber,
+                timestamp: currentProductData.certification.timestamp,
+                issuer: 'VeriChain Authentication System',
+                status: 'Verified'
+            };
+            
+            const blob = new Blob([JSON.stringify(certificate, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `VeriChain_Certificate_${currentProductData.productId}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('Certificate downloaded!', 'success');
+        }
+        
+        /**
+         * Share certificate
+         */
+        function shareCertificate() {
+            if (!currentProductData || !currentProductData.certification) return;
+            
+            const shareText = `🔐 VeriChain Certificate\n\nProduct: ${currentProductData.productName}\nConfidence: ${currentProductData.confidence}\nTransaction: ${currentProductData.certification.txHash}`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'VeriChain Certificate',
+                    text: shareText
+                }).catch(() => {});
+            } else {
+                // Fallback: copy to clipboard
+                navigator.clipboard.writeText(shareText).then(() => {
+                    showToast('Certificate details copied to clipboard!', 'success');
+                });
+            }
         }
         
         /**
@@ -311,9 +569,20 @@
             document.getElementById('certify-section').classList.remove('hidden');
             document.getElementById('blockchain-confirmation').classList.add('hidden');
             
-            // Clear uploaded file
+            // Clear uploaded file and data
             uploadedFile = null;
+            currentProductData = null;
         }
+        
+        // Close history sidebar when clicking outside
+        document.addEventListener('click', (e) => {
+            const sidebar = document.getElementById('historySidebar');
+            const historyBtn = event.target.closest('button[onclick="toggleHistory()"]');
+            
+            if (!sidebar.contains(e.target) && !historyBtn && !sidebar.classList.contains('translate-x-full')) {
+                toggleHistory();
+            }
+        });
     </script>
     
 </body>
