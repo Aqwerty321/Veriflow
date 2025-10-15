@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VeriChain - AI Product Authentication</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* Custom animations and styles */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        .drop-zone {
+            transition: all 0.3s ease;
+        }
+        
+        .drop-zone:hover {
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-lg">
+        <div class="container mx-auto px-6 py-6">
+            <h1 class="text-4xl font-bold text-center">
+                <span class="text-blue-500">Veri</span><span class="text-white">Chain</span>
+            </h1>
+            <p class="text-center text-gray-400 mt-2">AI-Powered Product Authentication System</p>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-12">
+        
+        <!-- Step 1: Upload Section -->
+        <div id="upload-step" class="max-w-2xl mx-auto">
+            <div class="bg-gray-800 rounded-lg shadow-2xl p-8">
+                <h2 class="text-2xl font-semibold mb-6 text-center">Upload Product Image</h2>
+                
+                <!-- Drop Zone -->
+                <div class="drop-zone border-4 border-dashed border-gray-600 rounded-lg p-12 text-center cursor-pointer mb-6"
+                     onclick="document.getElementById('fileInput').click()">
+                    <svg class="mx-auto h-16 w-16 text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                    <p class="text-xl text-gray-400 mb-2">Click to upload or drag and drop</p>
+                    <p class="text-sm text-gray-500">PNG, JPG, JPEG up to 10MB</p>
+                </div>
+                
+                <!-- Hidden File Input -->
+                <input type="file" 
+                       id="fileInput" 
+                       accept="image/*" 
+                       class="hidden" 
+                       onchange="handleImageUpload(event)">
+                
+                <!-- Image Preview -->
+                <div id="imagePreviewContainer" class="hidden mb-6">
+                    <img id="imagePreview" 
+                         class="w-full max-h-96 object-contain rounded-lg border-2 border-gray-700" 
+                         alt="Product Preview">
+                </div>
+                
+                <!-- Analyze Button -->
+                <button id="analyzeBtn" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onclick="runAIAnalysis()"
+                        disabled>
+                    Analyze Product
+                </button>
+            </div>
+        </div>
+        
+        <!-- Step 2: Analysis in Progress -->
+        <div id="analysis-step" class="max-w-2xl mx-auto hidden">
+            <div class="bg-gray-800 rounded-lg shadow-2xl p-12 text-center">
+                <div class="spinner mx-auto mb-6"></div>
+                <h2 class="text-2xl font-semibold mb-4">Analyzing Product...</h2>
+                <p class="text-gray-400">Our AI is identifying your product</p>
+            </div>
+        </div>
+        
+        <!-- Step 3: Results and Blockchain Certification -->
+        <div id="result-step" class="max-w-2xl mx-auto hidden">
+            <div class="bg-gray-800 rounded-lg shadow-2xl p-8 fade-in">
+                <h2 class="text-2xl font-semibold mb-6 text-center text-green-400">✓ Product Identified</h2>
+                
+                <!-- Product Details -->
+                <div class="bg-gray-700 rounded-lg p-6 mb-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-gray-400 text-sm mb-1">Product Name</p>
+                            <p id="productName" class="text-xl font-semibold">-</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm mb-1">Confidence Score</p>
+                            <p id="confidenceScore" class="text-xl font-semibold text-blue-400">-</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Product Image in Results -->
+                <div class="mb-6">
+                    <img id="resultImage" 
+                         class="w-full max-h-64 object-contain rounded-lg border-2 border-gray-700" 
+                         alt="Analyzed Product">
+                </div>
+                
+                <!-- Certification Section -->
+                <div id="certify-section" class="space-y-4">
+                    <button id="certifyBtn" 
+                            class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg transition duration-300"
+                            onclick="simulateBlockchainCertification()">
+                        🔐 Certify on Blockchain
+                    </button>
+                    
+                    <button class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300"
+                            onclick="resetApplication()">
+                        Analyze Another Product
+                    </button>
+                </div>
+                
+                <!-- Blockchain Certification Confirmation -->
+                <div id="blockchain-confirmation" class="hidden mt-6 bg-green-900 border-2 border-green-500 rounded-lg p-6 fade-in">
+                    <h3 class="text-xl font-semibold mb-3 text-green-400">🎉 Certificate Issued!</h3>
+                    <p class="text-gray-300 mb-4">Your product has been successfully verified and recorded on the blockchain.</p>
+                    <div class="bg-gray-800 rounded p-4 font-mono text-sm">
+                        <p class="text-gray-400 text-xs mb-1">Transaction Hash:</p>
+                        <p class="text-green-400 break-all" id="txHash">0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb7</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </main>
+    
+    <!-- Footer -->
+    <footer class="text-center text-gray-500 py-8">
+        <p>&copy; 2025 VeriChain. Powered by AI and Blockchain Technology.</p>
+    </footer>
+    
+    <script>
+        // Global variable to store the uploaded file
+        let uploadedFile = null;
+        
+        /**
+         * Handle image upload and display preview
+         */
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            
+            if (!file) return;
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload a valid image file.');
+                return;
+            }
+            
+            // Validate file size (10MB max)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File size must be less than 10MB.');
+                return;
+            }
+            
+            uploadedFile = file;
+            
+            // Display image preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('imagePreview');
+                preview.src = e.target.result;
+                document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                
+                // Enable the analyze button
+                document.getElementById('analyzeBtn').disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        /**
+         * Run AI analysis on the uploaded image
+         */
+        async function runAIAnalysis() {
+            if (!uploadedFile) {
+                alert('Please upload an image first.');
+                return;
+            }
+            
+            // Hide upload step, show analysis step
+            document.getElementById('upload-step').classList.add('hidden');
+            document.getElementById('analysis-step').classList.remove('hidden');
+            
+            try {
+                // Create FormData and append the file
+                const formData = new FormData();
+                formData.append('file', uploadedFile);
+                
+                // Send POST request to Flask backend
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                // Check if request was successful
+                if (!response.ok) {
+                    throw new Error('Failed to analyze image');
+                }
+                
+                // Parse JSON response
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                // Display results
+                displayResults(data);
+                
+            } catch (error) {
+                console.error('Error during analysis:', error);
+                alert('Failed to analyze the image. Please try again.');
+                resetApplication();
+            }
+        }
+        
+        /**
+         * Display the AI analysis results
+         */
+        function displayResults(data) {
+            // Hide analysis step, show result step
+            document.getElementById('analysis-step').classList.add('hidden');
+            document.getElementById('result-step').classList.remove('hidden');
+            
+            // Populate result data
+            document.getElementById('productName').textContent = data.productName;
+            document.getElementById('confidenceScore').textContent = data.confidence;
+            
+            // Display the analyzed image
+            const resultImage = document.getElementById('resultImage');
+            resultImage.src = document.getElementById('imagePreview').src;
+        }
+        
+        /**
+         * Simulate blockchain certification process
+         */
+        function simulateBlockchainCertification() {
+            // Generate a random transaction hash
+            const txHash = '0x' + Array.from({length: 40}, () => 
+                Math.floor(Math.random() * 16).toString(16)
+            ).join('');
+            
+            document.getElementById('txHash').textContent = txHash;
+            
+            // Hide certify button, show confirmation
+            document.getElementById('certify-section').classList.add('hidden');
+            document.getElementById('blockchain-confirmation').classList.remove('hidden');
+            
+            // Optional: Show an alert for extra emphasis
+            setTimeout(() => {
+                alert('🎉 Success! Your product certificate has been minted on the blockchain.');
+            }, 300);
+        }
+        
+        /**
+         * Reset the application to initial state
+         */
+        function resetApplication() {
+            // Hide all steps except upload
+            document.getElementById('upload-step').classList.remove('hidden');
+            document.getElementById('analysis-step').classList.add('hidden');
+            document.getElementById('result-step').classList.add('hidden');
+            
+            // Reset form elements
+            document.getElementById('fileInput').value = '';
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            document.getElementById('analyzeBtn').disabled = true;
+            
+            // Reset result elements
+            document.getElementById('certify-section').classList.remove('hidden');
+            document.getElementById('blockchain-confirmation').classList.add('hidden');
+            
+            // Clear uploaded file
+            uploadedFile = null;
+        }
+    </script>
+    
+</body>
+</html>
