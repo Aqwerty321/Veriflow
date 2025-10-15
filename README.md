@@ -209,7 +209,7 @@ This project is open source and available for educational purposes.
 
 <div align="center">
   
-  **Made with ❤️ for the hackathon community**
+  **Made with ❤️ by the code crusaders team**
   
   ⭐ Star this repo if you find it helpful!
   
